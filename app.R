@@ -1,7 +1,7 @@
 library(bs4Dash)
 
 # Lista de variables
-estados_civiles <- c("Soltera", "Casada", "Viuda", "Separada", "Divorciada", "Unión libre")
+estados_civiles <- c("Solter@", "Casad@", "Viud@", "Separad@", "Divorciad@", "Unión libre")
 ingresos_mensuales <- c("$2,699 o menos", "$2,700 - $6,799", "$6,800 - $11,599", "$11,600 - $34,999", "$35,000 - $84,000", "$85,000 o más")
 parentesco <- c("Conyugue", "Pareja", "Hija", "Hijo", "Madre", "Padre", "Abuela", "Abuelo", "Tía", "Tío", "Cuñada", "Cuñado", "Sobrina", "Sobrino", "Roomie")
 sectores_economicos <- c("Sector de agricultura, ganadería, explotación y aprovechamiento forestal, pesca y caza",
