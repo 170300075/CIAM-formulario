@@ -4,6 +4,7 @@ library(shinyWidgets)
 
 useSweetAlert()
 
+# Conexión a la base de datos
 conn <- mongo("encuesta", url = "mongodb+srv://170300075:Maripau01@cluster0.ynkmfoz.mongodb.net/ciam")
 
 # Lista de variables
@@ -15,7 +16,7 @@ sectores_economicos <- c("Sector de agricultura, ganadería, explotación y apro
 "Servicios financieros y de seguros", "Servicios inmobiliarios, alquiler de bienes muebles e intagibles", "Servicios profesionales, científicos y técnicos", "Corporativos",
 "Servicios de apoyo a negocios, manejo de residuos y desechos o servicios de reparación", "Servicios educativos", "Servicios de salud y asistencia social",
 "Servicios de esparcimiento cultural/deportivo y otros servicios recreativos", "Hotelería/Preparación de alimentos y bebidas", "Actividades gubernamentales")
-rangos_edad_hijos <- c("0 - 5 años", "6 - 15 años", "15 - 22 años", "23 años en adelante")
+rangos_edad_hijos <- c("0 - 5 años", "6 - 15 años", "15 - 18 años")
 servicios_medicos <- c("Ninguno", "IMSS", "ISSSTE", "Seguro Popular", "Gastos Médicos Mayores")
 grados_estudios <- c("Sin estudios", "Preescolar", "Primaria", "Secundaria", "Bachillerato", "Licenciatura", "Maestría", "Doctorado")
 principales_necesidades <- c("Cubrir alimentación", "Acompañamiento psicológico", "Cuidado de hij@s", "Ayuda por causa de violencia", "Apoyo pedagógico", "Apoyo médico", "Apoyo jurídico", "Ninguna", "Otra")
@@ -54,7 +55,7 @@ formInput <- function(my_title = NULL, content = NULL){
     div(
         box(
             title = my_title,
-            status = "indigo",
+            status = "info",
             headerBorder = FALSE,
             solidHeader = FALSE,
             collapsible = FALSE,
@@ -75,7 +76,7 @@ header <- dashboardHeader(
     title = h5("CIAM Cancún | Análisis de la población", class = "p-3 text-white"),
     compact = FALSE, 
     border = FALSE,
-    status = "indigo",
+    status = "purple",
     fixed = TRUE
 )
 
@@ -134,10 +135,21 @@ server <- function(input, output, session) {
             )
         )
     })
-
+    
     output$p2 <- renderUI({
+      formInput(
+        my_title = "Pregunta 2",
+        textInput(
+          inputId = "correo",
+          label = question("Escribe tu correo electrónico"),
+          placeholder = "Ejemplo: ciam@org.mx"
+        )
+      )
+    })
+
+    output$p3 <- renderUI({
         formInput(
-            my_title = "Pregunta 2",
+            my_title = "Pregunta 3",
             numericInput(
                 inputId = "edad",
                 label = question("¿Cuál es tu edad? (en años)"),
@@ -147,24 +159,13 @@ server <- function(input, output, session) {
         )
     })
 
-    output$p3 <- renderUI({
-        formInput(
-            my_title = "Pregunta 3",
-            selectInput(
-                inputId = "sexo",
-                label = question("¿Cuál es tu sexo?"),
-                choices = c("Mujer", "Hombre")
-            )
-        )
-    })
-
     output$p4 <- renderUI({
         formInput(
             my_title = "Pregunta 4",
             selectInput(
-                inputId = "estado_civil",
-                label = question("¿Cuál es tu estado civil?"),
-                choices = estados_civiles
+                inputId = "sexo",
+                label = question("¿Cuál es tu sexo?"),
+                choices = c("Mujer", "Hombre", "Otro")
             )
         )
     })
@@ -172,11 +173,10 @@ server <- function(input, output, session) {
     output$p5 <- renderUI({
         formInput(
             my_title = "Pregunta 5",
-            radioButtons(
-                inputId = "sabe_leer_escribir",
-                label = question("¿Sabes leer y/o escribir?"),
-                choices = c("No", "Sí"),
-                selected = character(0)
+            pickerInput(
+                inputId = "estado_civil",
+                label = question("¿Cuál es tu estado civil?"),
+                choices = estados_civiles
             )
         )
     })
@@ -185,10 +185,15 @@ server <- function(input, output, session) {
         formInput(
             my_title = "Pregunta 6",
             div(
-                radioButtons(
+                radioGroupButtons(
                     inputId = "habla_lengua_indigena",
                     label = question("¿Hablas alguna lengua indigena?"),
-                    choices = c("No", "Sí")
+                    choices = c("No", "Sí"),
+                    individual = TRUE,
+                    checkIcon = list(
+                      yes = tags$i(class = "fa fa-circle", style = "color: indigo"),
+                      no = tags$i(class = "fa fa-circle-o", style = "color: indigo")
+                    )
                 ),
 
                 uiOutput("p6_a")
@@ -209,11 +214,10 @@ server <- function(input, output, session) {
     output$p7 <- renderUI({
         formInput(
             my_title = "Pregunta 7",
-            selectInput(
+            pickerInput(
                 inputId = "ingresos_mensuales",
                 label = question("¿Cuáles son los ingresos mensuales del hogar?"),
-                choices = ingresos_mensuales,
-                selected = NULL
+                choices = ingresos_mensuales
             )
         )
     })
@@ -221,12 +225,13 @@ server <- function(input, output, session) {
     output$p8 <- renderUI({
         formInput(
             my_title = "Pregunta 8",
-            selectInput(
+            pickerInput(
                 inputId = "viven_misma_vivienda",
-                label = question("¿Quiénes viven en la misma vivienda? Selecciona los que apliquen"),
+                label = question("¿Quiénes viven en la misma vivienda? Selecciona todos los que apliquen."),
                 choices = parentesco,
                 multiple = TRUE,
-                selected = NULL
+                options = list(`live-search` = TRUE)
+                #selected = NULL
             )
         )
     })
@@ -246,12 +251,12 @@ server <- function(input, output, session) {
     output$p10 <- renderUI({
         formInput(
             my_title = "Pregunta 10",
-            selectInput(
+            pickerInput(
                 inputId = "principal_ingreso",
                 label = question("¿Quién aporta el principal ingreso económico del hogar?"),
                 choices = c("Yo", parentesco),
                 multiple = FALSE,
-                selected = NULL
+                options = list(`live-search` = TRUE)
             )
         )
     })
@@ -259,12 +264,12 @@ server <- function(input, output, session) {
     output$p11 <- renderUI({
         formInput(
             my_title = "Pregunta 11",
-            selectInput(
+            pickerInput(
                 inputId = "sector_economico",
                 label = question("¿En qué sector trabaja esa persona?"),
                 choices = sectores_economicos,
                 multiple = FALSE,
-                selected = NULL
+                options = list(`live-search` = TRUE)
             )
         )
     })
@@ -274,7 +279,7 @@ server <- function(input, output, session) {
             my_title = "Pregunta 12",
             numericInput(
                 inputId = "horas_laborales",
-                label = question("¿Cuántas hora labora a la semana esa persona?"),
+                label = question("¿Cuántas horas labora a la semana esa persona?"),
                 value = NULL,
                 min = 0, max = 168, step = 1
             )
@@ -285,7 +290,7 @@ server <- function(input, output, session) {
         formInput(
             my_title = "Pregunta 13",
             numericInput(
-                inputId = "horas_llegar_trabajo",
+                inputId = "minutos_llegar_trabajo",
                 label = question("¿Cuántos minutos le toma llegar al trabajo?"),
                 value = NULL,
                 min = 0, max = 500, step = 1
@@ -299,14 +304,14 @@ server <- function(input, output, session) {
             div(
                 numericInput(
                     inputId = "cantidad_hijas",
-                    label = question("¿Cuántas hijas tiene?"),
+                    label = question("¿Cuántas menores hay en el hogar?"),
                     value = 0,
                     min = 0, max = 50, step = 1
                 ),
 
                 numericInput(
                     inputId = "cantidad_hijos",
-                    label = question("¿Cuántos hijos tiene?"),
+                    label = question("¿Cuántos menores hay en el hogar?"),
                     value = 0,
                     min = 0, max = 50, step = 1
                 )
@@ -338,7 +343,7 @@ server <- function(input, output, session) {
                 my_title = "Pregunta 16",
                 numericInput(
                     inputId = "asistencia_escolar",
-                    label = question("¿Cuántos de sus hij@s asisten a la escuela?"),
+                    label = question("¿Cuántos menores asisten a la escuela?"),
                     value = NULL,
                     min = 0, max = 50, step = 1 
                 )
@@ -350,12 +355,11 @@ server <- function(input, output, session) {
         if(values$hijxs > 0){
             formInput(
                 my_title = "Pregunta 17",
-                selectInput(
+                pickerInput(
                     inputId = "rango_edad_hijos",
-                    label = question("Rango de edad de sus hijos e hijas. (Selecione los rangos de edad aplicables)"),
+                    label = question("Rango de edad de los menores. (Selecione los rangos de edad aplicables)"),
                     choices = rangos_edad_hijos,
-                    multiple = TRUE,
-                    selected = NULL
+                    multiple = TRUE
                 )
             )
         }
@@ -364,12 +368,11 @@ server <- function(input, output, session) {
     output$p18 <- renderUI({
         formInput(
                 my_title = "Pregunta 18",
-                selectInput(
+                pickerInput(
                     inputId = "servicio_medico",
                     label = question("¿A qué servicio médico pertenece?"),
                     choices = servicios_medicos,
-                    multiple = FALSE,
-                    selected = NULL
+                    multiple = FALSE
                 )
             )
     })
@@ -378,12 +381,11 @@ server <- function(input, output, session) {
     output$p19 <- renderUI({
         formInput(
             my_title = "Pregunta 19",
-            selectInput(
+            pickerInput(
                 inputId = "supermanzana_vivienda",
                 label = question("¿En qué región, supermanzana o colonia vive actualmente?"),
                 choices = regiones,
-                multiple = FALSE,
-                selected = NULL
+                options = list(`live-search` = TRUE)
             )
         )
     })
@@ -393,12 +395,11 @@ server <- function(input, output, session) {
             my_title = "Pregunta 20",
             
             div(
-                selectInput(
+                pickerInput(
                     inputId = "ultimo_grado_estudios",
                     label = question("¿Cuál es el último grado de estudios del principal ingreso económico del hogar?"),
                     choices = grados_estudios,
-                    multiple = FALSE,
-                    selected = NULL
+                    multiple = FALSE
                 ),
 
                 uiOutput("p20_a")
@@ -408,12 +409,11 @@ server <- function(input, output, session) {
 
     output$p20_a <- renderUI({
         if(input$principal_ingreso != "Yo"){
-            selectInput(
+            pickerInput(
                 inputId = "ultimo_grado_estudios_encuestado",
                 label = question("¿Cuál es tu último grado de estudios?"),
                 choices = grados_estudios,
-                multiple = FALSE,
-                selected = NULL
+                multiple = FALSE
             )
         }
     })
@@ -422,12 +422,11 @@ server <- function(input, output, session) {
         formInput(
             my_title = "Pregunta 21",
             div(
-                selectInput(
+                pickerInput(
                     inputId = "principales_necesidades",
                     label = question("¿Cuál es la principal necesidad de su familia?"),
                     choices = principales_necesidades,
-                    multiple = FALSE,
-                    selected = NULL
+                    multiple = FALSE
                 ),
 
                 uiOutput("p21_a")
@@ -448,10 +447,15 @@ server <- function(input, output, session) {
         formInput(
             my_title = "Pregunta 22",
             div(
-                radioButtons(
+                radioGroupButtons(
                     inputId = "conoce_ciam",
                     label = question("¿Conoce el CIAM?"),
-                    choices = c("No", "Sí")
+                    choices = c("No", "Sí"),
+                    individual = TRUE,
+                    checkIcon = list(
+                      yes = tags$i(class = "fa fa-circle", style = "color: indigo"),
+                      no = tags$i(class = "fa fa-circle-o", style = "color: indigo")
+                    )
                 ),
 
                 uiOutput("p22_a")
@@ -461,7 +465,21 @@ server <- function(input, output, session) {
 
     output$p22_a <- renderUI({
         if(input$conoce_ciam == "No"){
-            p("El CIAM es a todo dar")
+            HTML("
+              <h3 style='text-align: center;'>¡Conoce el CIAM!</h3>   
+              <p style='text-align: justify;' class = 'mx-3'>El Centro Integral de Atención a las Mujeres, CIAM Cancún A.C. es una organización 
+              civil mexicana, laica, apartidista y sin fines de lucro, consolidada desde el 2002. 
+              El compromiso con la defensa del Derecho a una vida libre de violencia le impulsa a 
+              implementar esfuerzos para la prevención de la violencia de género y social operando 
+              un Centro Comunitario de Educación para incidir de una manera más directa, enfática y 
+              con mayor impacto social en la construcción de una cultura de paz con una perspectiva 
+              género aplicada no sólo en mujeres y niñas, sino también en niños y hombres adultos.
+Nuestra Misión es Educar para la paz, mediante un Modelo Educativo Integral con enfoque de género, 
+DDHH y socio afectivo, transformando vidas y construyendo la igualdad de género en la comunidad. 
+Este modelo transversaliza las acciones, está centrado en las personas y fomenta la concienciación 
+y sensibilización, genera experiencias personales y sociales que preparan a las personas para la 
+transformación noviolenta de conflictos y las impulsa a ser agentes de cambio.</p> 
+")
         }
     })
 
@@ -482,29 +500,31 @@ server <- function(input, output, session) {
 
     observeEvent(input$submit, {
         datos <- list(
-            nombre = input$nombre, 
+            nombre = input$nombre,
+            correo = input$correo,
             edad = input$edad,
             sexo = input$sexo,
             estado_civil = input$estado_civil,
-            sabe_leer_escribir = input$sabe_leer_escribir,
             habla_lengua_indigena = input$habla_lengua_indigena,
-            ingresos_mensuales = input$ingresos_mensuales,
+            cual_lengua_indigena = input$cual_lengua_indigena,
+            ingresos_mensuales_hogar = input$ingresos_mensuales,
             viven_misma_vivienda = input$viven_misma_vivienda,
-            personas_trabajadoras = input$personas_trabajadoras,
-            principal_ingreso = input$principal_ingreso,
+            cuantas_personas_trabajan = input$personas_trabajadoras,
+            principal_ingreso_economico = input$principal_ingreso,
             sector_economico = input$sector_economico,
             horas_laborales = input$horas_laborales,
-            minutos_llegar_trabajo = input$horas_llegar_trabajo,
-            quien_cuida_hijos = input$cuida_hijos,
-            asistencia_escolar = input$asistencia_escolar,
-            cantidad_hijas = input$cantidad_hijas,
-            cantidad_hijos = input$cantidad_hijos,
-            rango_edad_hijos = input$rango_edad_hijos,
+            minutos_llegar_trabajo = input$minutos_llegar_trabajo,
+            cantidad_mejores_femenino = input$cantidad_hijas,
+            cantidad_mejores_masculino = input$cantidad_hijos,
+            quien_cuida_menores = input$cuida_hijos,
+            menores_asisten_escuela = input$asistencia_escolar,
+            rango_edad_menores = input$rango_edad_hijos,
             servicio_medico = input$servicio_medico,
-            supermanzana_vivienda = input$supermanzana_vivienda,
+            lugar_residencia = input$supermanzana_vivienda,
             ultimo_grado_estudios_principal_ingreso = input$ultimo_grado_estudios,
             ultimo_grado_estudios_encuestado = input$ultimo_grado_estudios_encuestado,
             principales_necesidades = input$principales_necesidades,
+            cual_principal_necesidad = input$cual_principal_necesidad,
             conoce_ciam = input$conoce_ciam,
             actividades_recomendadas = input$actividades_recomendadas,
             hora_encuesta = Sys.time()
@@ -514,12 +534,12 @@ server <- function(input, output, session) {
 
         ask_confirmation(
             inputId = "confirmacion",
-            title = "¡Respuestas enviadas!",
+            title = "¡Respuesta enviada!",
             text = "Te agradecemos por haber contestado esta encuesta",
             type = "success",
-            btn_labels = "Entendido!",
+            btn_labels = "Entendido",
             closeOnClickOutside = TRUE,
-            showCloseButton = TRUE
+            showCloseButton = FALSE
         )
     })
 

@@ -5,9 +5,9 @@ account: kenneth-diaz-gonzalez
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 7049144
-bundleId: 6352894
+bundleId: 6377006
 url: https://kenneth-diaz-gonzalez.shinyapps.io/CIAM-formulario/
-when: 1664479026.15701
-lastSyncTime: 1664479026.15702
+when: 1665050456.7634
+lastSyncTime: 1665050456.76342
 asMultiple: FALSE
 asStatic: FALSE
